@@ -1,5 +1,7 @@
 from ortools.constraint_solver import pywrapcp
 from ortools.constraint_solver import routing_enums_pb2
+import time
+from datetime import datetime
 
 import argparse
 import os
@@ -16,7 +18,61 @@ def read_file(file):
     if(os.path.splitext(file)[1]=='.tsp'):
         #lecture des gros fichiers 
         data = {}
-    else:
+        f.readline()#name
+        f.readline()#type
+        f.readline()#comment
+        n_sommets = int(f.readline().rstrip().split(' ')[1])#dimension
+        oriente = 0
+        value = 1#useless 
+        
+        f.readline()#edge weight type 
+        format = (f.readline().rstrip().split(' ')[1])#format
+        f.readline()#section
+
+        #init
+        data["distance_matrix"] = [[-1 for _ in range(n_sommets)] for _ in range(n_sommets)]
+        
+        for i in range(n_sommets):
+            data["distance_matrix"][i][i] = 0
+        
+        tmp = f.readline().rstrip().split(' ')
+        i = 0
+        j = 0
+        
+        while(tmp != ['EOF']):
+            #print(tmp)
+            for number in tmp:
+                try:
+                    number = int(number)
+                    if(i < 5):
+                        print(i,j)
+                        print(number)
+
+                                        
+                    data["distance_matrix"][i][j] = (number)
+                    data["distance_matrix"][j][i] = (number)
+                    
+                    j+=1
+                    
+                    if(number == 0):
+                        i  += 1
+                        j = 0
+                        
+                
+                    '''if j == n_sommets:
+                    j = 0
+                    i += 1'''
+                except:
+                    pass
+            
+            tmp = f.readline().rstrip().split(' ')
+            
+        data["num_vehicles"] = 1
+        data["depot"] = 0 
+        
+        for d in data["distance_matrix"]:
+            print(d)
+    else:#Lecture dse fichiers classiques 
         
         n_sommets = int(f.readline().split(' ')[1])
         oriente = ((f.readline().split(' ')[1])==1)
@@ -57,9 +113,9 @@ def get_parser(h):
 	return parser.parse_args().file
     
 
-def print_solution(manager, routing, solution):
+def print_solution(manager, routing, solution,execution_time):
     """Prints solution on console."""
-    print(f"Objective: {solution.ObjectiveValue()} miles")
+    print(f"Objective: {solution.ObjectiveValue()} km")
     index = routing.Start(0)
     plan_output = "Route for vehicle 0:\n"
     route_distance = 0
@@ -70,7 +126,19 @@ def print_solution(manager, routing, solution):
         route_distance += routing.GetArcCostForVehicle(previous_index, index, 0)
     plan_output += f" {manager.IndexToNode(index)}\n"
     print(plan_output)
-    plan_output += f"Route distance: {route_distance}miles\n"
+    plan_output += f"Route distance: {route_distance}km\n"
+    
+    now = datetime.now()
+    timestamp = now.strftime("%Y%m%d_%H%M%S")
+    # Create the filename with the timestamp
+    output_file = f"..\\resultats\\output_{timestamp}.txt"
+    
+    # Ensure the directory exists
+    os.makedirs("../resultats", exist_ok=True)
+    
+    with open(output_file, 'w') as of:
+        of.write(plan_output)
+        of.write(f"Execution time: {execution_time} seconds")
     
 def get_routes(solution, routing, manager):
     """Get vehicle routes from a solution and store them in an array."""
@@ -115,11 +183,16 @@ def main(file):
     search_parameters.first_solution_strategy = (routing_enums_pb2.FirstSolutionStrategy.PATH_CHEAPEST_ARC)
 
     # Résolution 
+    start_time = time.perf_counter()#plus précis que time.time
     solution = routing.SolveWithParameters(search_parameters)
+    end_time = time.perf_counter()
+    execution_time = end_time - start_time
     
     # Affichage de la solution
     if solution:
-        print_solution(manager, routing, solution)
+        print_solution(manager, routing, solution,execution_time)
+    print(f"Execution time: {execution_time} seconds")
+
         
 if __name__ == "__main__":
     # Récupérer les arguments 
