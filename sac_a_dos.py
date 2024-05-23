@@ -3,7 +3,13 @@ import argparse,os
 
 def read_file(file, solver):
     #lire déjà le début pour voir dans quel type de fichier on est et revenir en arrière après ?
-    f = open(file,"r")
+    try:
+        f = open(file, 'r') 
+    except FileNotFoundError:
+        print(f"Error: The file '{file}' was not found.")
+    except Exception as e:
+        print(f"An error occurred while reading the file: {e}")
+        
     nb_var = int(f.readline().split(' ')[1])
     nb_contraintes = int(f.readline().split(' ')[1])
     
@@ -57,11 +63,7 @@ def get_parser(h):
 	return parser.parse_args().file
     
 
-def main():
-    
-    #Récupérer les arguments 
-    file = get_parser(h=True)
-
+def main(file):
     #Création du solveur 
     solver = pywraplp.Solver.CreateSolver("SAT")
     if not solver:
@@ -86,5 +88,7 @@ def main():
         i = i + 1
 
 
-if __name__ == "__main__":
-    main()
+if __name__ == "__main__": 
+    #Récupérer les arguments 
+    filename = get_parser(h=True)
+    main(filename)

@@ -2,39 +2,51 @@ from ortools.constraint_solver import pywrapcp
 from ortools.constraint_solver import routing_enums_pb2
 
 import argparse
+import os
 
 def read_file(file):
     #lire déjà le début pour voir dans quel type de fichier on est et revenir en arrière après ?
-    f = open(file,"r")
-    n_sommets = int(f.readline().split(' ')[1])
-    oriente = ((f.readline().split(' ')[1])==1)
-    value = ((f.readline().split(' ')[1])==1)
-    
-    #DEBUT DES ARETES 
-    f.readline()
-    
-    data = {}
-    # float inf peut-être à changer, par une grosse valeur d'entier par exemple 
-    data["distance_matrix"] = [[-1 for _ in range(n_sommets)] for _ in range(n_sommets)]
-    
-    for i in range(n_sommets):
-        data["distance_matrix"][i][i] = 0
-    
-    tmp = f.readline().rstrip().split(' ')
-    
-    while(tmp != ['FIN_DEF_ARETES']):
-        #print(tmp)
-        data["distance_matrix"][int(tmp[0])][int(tmp[1])] = int(tmp[2])
-        data["distance_matrix"][int(tmp[1])][int(tmp[0])] = int(tmp[2])
+    try:
+        f = open(file, 'r')
+    except FileNotFoundError:
+        print(f"Error: The file '{file}' was not found.")
+    except Exception as e:
+        print(f"An error occurred while reading the file: {e}")
+        
+    if(os.path.splitext(file)[1]=='.tsp'):
+        #lecture des gros fichiers 
+        data = {}
+    else:
+        
+        n_sommets = int(f.readline().split(' ')[1])
+        oriente = ((f.readline().split(' ')[1])==1)
+        value = ((f.readline().split(' ')[1])==1)
+        
+        #DEBUT DES ARETES 
+        f.readline()
+        
+        data = {}
+        # float inf peut-être à changer, par une grosse valeur d'entier par exemple 
+        data["distance_matrix"] = [[-1 for _ in range(n_sommets)] for _ in range(n_sommets)]
+        
+        for i in range(n_sommets):
+            data["distance_matrix"][i][i] = 0
         
         tmp = f.readline().rstrip().split(' ')
         
-    data["num_vehicles"] = 1
-    data["depot"] = 0 
-    
-    for d in data["distance_matrix"]:
-        print(d)
+        while(tmp != ['FIN_DEF_ARETES']):
+            #print(tmp)
+            data["distance_matrix"][int(tmp[0])][int(tmp[1])] = int(tmp[2])
+            data["distance_matrix"][int(tmp[1])][int(tmp[0])] = int(tmp[2])
+            
+            tmp = f.readline().rstrip().split(' ')
+            
+        data["num_vehicles"] = 1
+        data["depot"] = 0 
         
+        for d in data["distance_matrix"]:
+            print(d)
+            
     return data,oriente,value
 
 def get_parser(h):
@@ -74,10 +86,7 @@ def get_routes(solution, routing, manager):
         routes.append(route)
     return routes
     
-def main():
-    
-    # Récupérer les arguments 
-    file = get_parser(h=True)
+def main(file):
     
     # Lecture du fichier 
     data,oriente,value = read_file(file)
@@ -113,4 +122,6 @@ def main():
         print_solution(manager, routing, solution)
         
 if __name__ == "__main__":
-    main()
+    # Récupérer les arguments 
+    filename = get_parser(h=True)
+    main(filename)
